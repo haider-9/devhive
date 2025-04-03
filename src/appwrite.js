@@ -1,9 +1,9 @@
-import { Client, Account, Databases, OAuthProvider } from 'appwrite';
+import { Client, Account,Storage , OAuthProvider } from 'appwrite';
 
 const client = new Client();
 
-const endpoint = process.env.NEXT_PUBLIC_APPWRITE_URL;
-const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+const endpoint = process.env.NEXT_PUBLIC_ENDPOINT;
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 
 
 if (!endpoint || !projectId) {
@@ -17,4 +17,5 @@ client
 
 export { OAuthProvider }
 export const account = new Account(client);
-export const databases = new Databases(client);
+export const  storage = new Storage(client);
+export const ID = { unique: () => crypto.randomUUID() };

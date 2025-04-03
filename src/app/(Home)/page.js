@@ -1,8 +1,61 @@
-import FeedSection from '@/components/FeedSection';
-import Link from 'next/link';
-import { LuPlus } from 'react-icons/lu';
+"use client";
+import { account } from "@/appwrite";
+import FeedSection from "@/components/FeedSection";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { LuPlus } from "react-icons/lu";
+import { useEffect, useState } from "react";
 
 const Homepage = () => {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const user = await account.get();
+        if (user) {
+          setIsAuthenticated(true);
+        } else {
+          router.replace("/start");
+        }
+      } catch (error) {
+        console.log("Not authenticated:", error);
+        router.replace("/start");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkAuth();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [router]);
+
+  // Show loading state or redirect if not authenticated
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-info"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Don't render anything while redirecting
+  }
+
   return (
     <div className="relative">
       <FeedSection />

@@ -1,6 +1,6 @@
 # Node modules
 node_modules/
-
+.next
 # Environment files
 .env.local
 .env.*

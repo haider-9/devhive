@@ -10,13 +10,13 @@ import {
   LuLogOut,
   LuPlus,
   LuMessageCircle,
-  
-  LuInfo
+  LuInfo,
 } from "react-icons/lu";
 import { Avatar, Button } from "@nextui-org/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import NavLink from "./NavLink";
+import { account } from "@/appwrite";
 
 const sideLinks = [
   { name: "Home", icon: <LuHome />, href: "/" },
@@ -32,28 +32,63 @@ const Sidebar = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // Simulating user fetch from a generic auth service
-    const fetchUser = async () => {
-      // Replace this with actual user fetching logic
-      const mockUser = {
-        name: "John Doe",
-        email: "john@example.com",
-        avatarUrl: "https://i.pravatar.cc/150?u=a042581f4e29026024d"
-      };
-      setUser(mockUser);
-    };
-    fetchUser();
+    // First try to get user from cookie
+    try {
+      const cookieValue = document.cookie.replace(
+        /(?:(?:^|.*;\s*)user\s*\=\s*([^;]*).*$)|^.*$/,
+        "$1"
+      );
+      
+      if (cookieValue) {
+        const userData = JSON.parse(cookieValue);
+        setUser(userData);
+      } else {
+        // If no cookie, try to get user from Appwrite session
+        fetchUserFromAppwrite();
+      }
+    } catch (error) {
+      console.error("Error parsing user cookie:", error);
+      // If error parsing cookie, try to get user from Appwrite session
+      fetchUserFromAppwrite();
+    }
   }, []);
+
+  const fetchUserFromAppwrite = async () => {
+    try {
+      const userData = await account.get();
+      setUser(userData);
+      
+      // Set the cookie for future use
+      document.cookie = `user=${JSON.stringify(userData)}`;
+    } catch (error) {
+      console.error("Error fetching user from Appwrite:", error);
+      // If we can't get the user from Appwrite, redirect to login
+      router.push("/start");
+    }
+  };
 
   const handleLogout = async () => {
     try {
-      // Replace this with actual logout logic
+      // Delete the Appwrite session
+      await account.deleteSession('current');
+      
+      // Clear the cookie
+      document.cookie = "user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      
       console.log("User logged out");
-      router.push('/signin');
+      setUser(null);
+      router.push("/start");
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("Logout failed", error);
+      // Even if the session deletion fails, still try to redirect
+      router.push("/start");
     }
   };
+
+  // If no user is found, don't render the sidebar
+  if (!user) {
+    return null;
+  }
 
   return (
     <aside className="pb-8 text-foreground h-screen fixed top-6 left-6 w-20 lg:w-80 flex flex-col transition-all duration-300">
@@ -62,24 +97,39 @@ const Sidebar = () => {
           <Link href="/profile" className="w-full">
             <div className="flex items-center justify-center lg:justify-start gap-4">
               <Avatar
-                src={user?.avatarUrl || "https://i.pravatar.cc/150?u=a042581f4e29026024d"}
+                src={
+                  user?.avatarUrl ||
+                  user?.prefs?.profileImageId ? 
+                  `${process.env.NEXT_PUBLIC_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_BUCKET_ID}/files/${user.prefs.profileImageId}/view?project=${process.env.NEXT_PUBLIC_PROJECT_ID}` : 
+                  "https://i.pravatar.cc/150?u=a042581f4e29026024d"
+                }
                 size="lg"
                 radius="full"
                 isBordered
                 color="warning"
               />
               <div className="hidden lg:block overflow-hidden">
-                <div className="font-semibold text-lg text-warning truncate">{user?.name}</div>
-                <div className="text-sm text-neutral-400 truncate">{user?.email}</div>
+                <div className="font-semibold text-lg text-warning truncate">
+                  {user?.name}
+                </div>
+                <div className="text-sm text-neutral-400 truncate">
+                  {user?.email}
+                </div>
               </div>
             </div>
           </Link>
           <div className="flex gap-2 w-full">
-            <Link href="/post/add" className="hidden grow p-3 rounded-xl bg-warning text-secondary lg:flex items-center justify-center gap-3">
+            <Link
+              href="/post/add"
+              className="hidden grow p-3 rounded-xl bg-warning text-secondary lg:flex items-center justify-center gap-3"
+            >
               <LuPlus className="text-xl" />
               New Post
             </Link>
-            <Link href="/chats" className="p-3 rounded-xl bg-warning text-secondary flex items-center justify-center gap-3 flex-grow lg:flex-grow-0">
+            <Link
+              href="/chats"
+              className="p-3 rounded-xl bg-warning text-secondary flex items-center justify-center gap-3 flex-grow lg:flex-grow-0"
+            >
               <LuMessageCircle className="text-xl" />
             </Link>
           </div>
@@ -90,7 +140,8 @@ const Sidebar = () => {
             <NavLink
               key={item.name}
               href={item.href}
-              className="w-full p-3 flex items-center justify-center lg:justify-start gap-3 hover:bg-warning hover:text-primary rounded-xl transition-colors">
+              className="w-full p-3 flex items-center justify-center lg:justify-start gap-3 hover:bg-warning hover:text-primary rounded-xl transition-colors"
+            >
               <span className="text-xl">{item.icon}</span>
               <span className="hidden lg:inline">{item.name}</span>
             </NavLink>
@@ -100,7 +151,8 @@ const Sidebar = () => {
         <div className="bg-secondary shadow-lg flex flex-col justify-center items-center rounded-2xl p-4">
           <Link
             href="/settings"
-            className="w-full p-3 flex items-center justify-center lg:justify-start gap-3 hover:bg-warning hover:text-primary rounded-xl transition-colors">
+            className="w-full p-3 flex items-center justify-center lg:justify-start gap-3 hover:bg-warning hover:text-primary rounded-xl transition-colors"
+          >
             <LuSettings className="text-xl" />
             <span className="hidden lg:inline">Settings</span>
           </Link>
