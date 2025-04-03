@@ -1,5 +1,6 @@
 # Node modules
 node_modules/
+
 # Environment files
 .env.local
 .env.*
@@ -21,4 +22,6 @@ coverage
 
 # OAuth Google secret
 ./google_client_secret.json
-.next
+
+# Next.js
+/.next/

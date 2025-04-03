@@ -41,7 +41,6 @@ import {
   SIGNUP_HUMOR_LINES,
 } from "@/constants";
 
-// Enhanced validation schemas with better error messages
 const signinSchema = z.object({
   email: z
     .string()
@@ -83,11 +82,8 @@ const signupSchema = z
 
 export default function AuthPage() {
   const router = useRouter();
-  const fileInputRef = useRef(null);
-  const [loggedInUser, setLoggedInUser] = useState(null);
   const [isLoginView, setIsLoginView] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [loadingImage, setLoadingImage] = useState(false);
   const [humorLine, setHumorLine] = useState("");
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
@@ -121,7 +117,7 @@ export default function AuthPage() {
         document.cookie = `user=${JSON.stringify(user)}`;
         router.push("/"); // Redirect if already logged in
       } catch (error) {
-        setLoggedInUser(null);
+        
       }
     };
     checkSession();
